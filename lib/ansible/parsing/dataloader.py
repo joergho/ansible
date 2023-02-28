@@ -14,7 +14,8 @@ import tempfile
 
 from ansible import constants as C
 from ansible.errors import AnsibleFileNotFound, AnsibleParserError
-from ansible.module_utils.basic import is_executable
+if os.name != 'nt':
+    from ansible.module_utils.basic import is_executable
 from ansible.module_utils.six import binary_type, text_type
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.parsing.quoting import unquote
@@ -28,7 +29,10 @@ display = Display()
 
 # Tries to determine if a path is inside a role, last dir must be 'tasks'
 # this is not perfect but people should really avoid 'tasks' dirs outside roles when using Ansible.
-RE_TASKS = re.compile(u'(?:^|%s)+tasks%s?$' % (os.path.sep, os.path.sep))
+if os.name == 'nt':
+    RE_TASKS = re.compile(u'(?:^|%s)+tasks%s?$' % ('\\\\', '\\\\'))
+else:    
+    RE_TASKS = re.compile(u'(?:^|%s)+tasks%s?$' % (os.path.sep, os.path.sep))
 
 
 class DataLoader:
@@ -123,6 +127,8 @@ class DataLoader:
 
     def is_executable(self, path):
         '''is the given path executable?'''
+        if os.name == 'nt':
+            raise NotImplementedError()
         path = self.path_dwim(path)
         return is_executable(path)
 

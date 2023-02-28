@@ -22,8 +22,10 @@ __metaclass__ = type
 import ast
 import datetime
 import os
-import pwd
+if os.name != 'nt':
+    import pwd
 import re
+import socket
 import time
 
 from collections.abc import Iterator, Sequence, Mapping, MappingView, MutableMapping
@@ -80,13 +82,16 @@ def generate_ansible_template_vars(path, fullpath=None, dest_path=None):
     else:
         b_path = to_bytes(fullpath)
 
-    try:
-        template_uid = pwd.getpwuid(os.stat(b_path).st_uid).pw_name
-    except (KeyError, TypeError):
+    if os.name == 'nt':
         template_uid = os.stat(b_path).st_uid
+    else:
+        try:
+            template_uid = pwd.getpwuid(os.stat(b_path).st_uid).pw_name
+        except (KeyError, TypeError):
+            template_uid = os.stat(b_path).st_uid
 
     temp_vars = {
-        'template_host': to_text(os.uname()[1]),
+        'template_host': to_text(socket.hostname()),
         'template_path': path,
         'template_mtime': datetime.datetime.fromtimestamp(os.path.getmtime(b_path)),
         'template_uid': to_text(template_uid),

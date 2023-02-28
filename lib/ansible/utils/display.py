@@ -19,7 +19,9 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import ctypes.util
-import fcntl
+import os
+if os.name != 'nt':
+    import fcntl
 import getpass
 import logging
 import os
@@ -31,26 +33,28 @@ import threading
 import time
 
 from struct import unpack, pack
-from termios import TIOCGWINSZ
+if os.name != 'nt':
+    from termios import TIOCGWINSZ
 
 from ansible import constants as C
 from ansible.errors import AnsibleError, AnsibleAssertionError
 from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.six import text_type
 from ansible.utils.color import stringc
-from ansible.utils.multiprocessing import context as multiprocessing_context
+if os.name != 'nt':
+    from ansible.utils.multiprocessing import context as multiprocessing_context
 from ansible.utils.singleton import Singleton
 from ansible.utils.unsafe_proxy import wrap_var
 from functools import wraps
 
-
-_LIBC = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
-# Set argtypes, to avoid segfault if the wrong type is provided,
-# restype is assumed to be c_int
-_LIBC.wcwidth.argtypes = (ctypes.c_wchar,)
-_LIBC.wcswidth.argtypes = (ctypes.c_wchar_p, ctypes.c_int)
-# Max for c_int
-_MAX_INT = 2 ** (ctypes.sizeof(ctypes.c_int) * 8 - 1) - 1
+if os.name != 'nt':
+    _LIBC = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
+    # Set argtypes, to avoid segfault if the wrong type is provided,
+    # restype is assumed to be c_int
+    _LIBC.wcwidth.argtypes = (ctypes.c_wchar,)
+    _LIBC.wcswidth.argtypes = (ctypes.c_wchar_p, ctypes.c_int)
+    # Max for c_int
+    _MAX_INT = 2 ** (ctypes.sizeof(ctypes.c_int) * 8 - 1) - 1
 
 
 def get_text_width(text):
@@ -61,6 +65,8 @@ def get_text_width(text):
     character and using wcwidth individually, falling back to a value of 0
     for non-printable wide characters.
     """
+    if os.name == 'nt':
+            return NotImplementedError()
     if not isinstance(text, text_type):
         raise TypeError('get_text_width requires text, not %s' % type(text))
 
@@ -234,6 +240,8 @@ class Display(metaclass=Singleton):
 
         This is only needed in ansible.executor.process.worker:WorkerProcess._run
         """
+        if os.name == 'nt':
+            return NotImplementedError()
         if multiprocessing_context.parent_process() is None:
             raise RuntimeError('queue cannot be set in parent process')
         self._final_q = queue
@@ -519,6 +527,8 @@ class Display(metaclass=Singleton):
         return result
 
     def _set_column_width(self):
+        if os.name == 'nt':
+            return NotImplementedError()
         if os.isatty(1):
             tty_size = unpack('HHHH', fcntl.ioctl(1, TIOCGWINSZ, pack('HHHH', 0, 0, 0, 0)))[1]
         else:

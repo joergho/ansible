@@ -8,12 +8,11 @@ import errno
 import os
 import stat
 import re
-import pwd
-import grp
 import time
 import shutil
 import traceback
-import fcntl
+if os.name == 'posix':
+    import fcntl
 import sys
 
 from contextlib import contextmanager
@@ -123,6 +122,8 @@ class FileLock:
     unwanted and/or unexpected behaviour
     '''
     def __init__(self):
+        if os.name != 'posix':
+            raise NotImplementedError()
         deprecate("FileLock is not reliable and has never been used in core for that reason. There is no current alternative that works across POSIX targets",
                   version='2.16')
         self.lockfd = None

@@ -36,11 +36,12 @@ import __main__
 import atexit
 import errno
 import datetime
-import grp
-import fcntl
-import locale
 import os
-import pwd
+if os.name == 'posix':
+    import grp
+    import pwd
+    import fcntl
+import locale
 import platform
 import re
 import select
@@ -797,6 +798,8 @@ class AnsibleModule(object):
         return changed
 
     def set_owner_if_different(self, path, owner, changed, diff=None, expand=True):
+        if os.name != 'posix':
+            raise NotImplementedError()
 
         if owner is None:
             return changed
@@ -838,6 +841,8 @@ class AnsibleModule(object):
         return changed
 
     def set_group_if_different(self, path, group, changed, diff=None, expand=True):
+        if os.name != 'posix':
+            raise NotImplementedError()
 
         if group is None:
             return changed
@@ -1201,14 +1206,18 @@ class AnsibleModule(object):
             (uid, gid) = self.user_and_group(path)
             kwargs['uid'] = uid
             kwargs['gid'] = gid
-            try:
-                user = pwd.getpwuid(uid)[0]
-            except KeyError:
+            if os.name != 'posix':
                 user = str(uid)
-            try:
-                group = grp.getgrgid(gid)[0]
-            except KeyError:
                 group = str(gid)
+            else:
+                try:
+                    user = pwd.getpwuid(uid)[0]
+                except KeyError:
+                    user = str(uid)
+                try:
+                    group = grp.getgrgid(gid)[0]
+                except KeyError:
+                    group = str(gid)
             kwargs['owner'] = user
             kwargs['group'] = group
             st = os.lstat(b_path)

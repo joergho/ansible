@@ -20,8 +20,9 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import errno
-import fcntl
 import os
+if os.name != 'nt':
+    import fcntl
 import random
 import shlex
 import shutil
@@ -1052,6 +1053,8 @@ class VaultEditor:
         :arg shred: if shred==True, make sure that the original data is first shredded so that is cannot be recovered.
         :returns: None
         """
+        if os.name == 'nt':
+            raise NotImplementedError()
         # FIXME: do we need this now? data_bytes should always be a utf-8 byte string
         b_file_data = to_bytes(data, errors='strict')
 
